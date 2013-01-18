@@ -75,6 +75,8 @@ static std::vector<glm::vec3>       s_aPoints;
 static std::vector<glm::lowp_uvec3> s_aTriangles;
 static std::vector<glm::lowp_uvec4> s_aQuads;
 
+static glm::vec4 *s_pRaytraceImage = NULL;
+
 static Octree* s_pTree = NULL;
 
 /*!
@@ -128,6 +130,31 @@ static void shapesPrintf (int row, int col, const char *fmt, ...)
     glPopMatrix();
 }
 
+static void displayRaytrace()
+{
+    if (s_pRaytraceImage)
+    {
+        GLint pViewport[4];
+        glGetIntegerv(GL_VIEWPORT, pViewport);
+        
+        glPushMatrix();
+        glLoadIdentity();
+        
+        glMatrixMode(GL_PROJECTION);
+        glPushMatrix();
+        glLoadIdentity();
+        
+        glOrtho(0,pViewport[2],0,pViewport[3],-1,1);
+        
+        glRasterPos2i(pViewport[0] , pViewport[1]);
+        glDrawPixels(pViewport[2] , pViewport[3], GL_RGBA, GL_FLOAT, s_pRaytraceImage);
+        
+        glPopMatrix();
+        glMatrixMode(GL_MODELVIEW);
+        glPopMatrix();
+    }
+}
+
 /* GLUT callback Handlers */
 
 static void
@@ -136,13 +163,15 @@ resize(int width, int height)
     glViewport(0, 0, width, height);
 
     const float fAspectRatio = (float) width / (float) height;
-
     
     glm::mat4 aProjection = glm::perspective(45.0f, fAspectRatio, 0.1f, 1000.0f);
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
 //    gluPerspective(45.0, fAspectRatio, 0.1, 1000.0);
     glLoadMatrixf(glm::value_ptr(aProjection));
+    
+    delete s_pRaytraceImage;
+    s_pRaytraceImage = new glm::vec4[width * height];
 }
 
 static void display(void)
@@ -194,7 +223,6 @@ static void display(void)
 
     glDisable(GL_LIGHTING);
     
-    
     glColor3d(0.1,0.1,0.1);
 
     if( s_bShowInfo )
@@ -205,10 +233,32 @@ static void display(void)
         shapesPrintf (4, 3, "Camera Position: (%f, %f, %f)", v3CameraPosition.x, v3CameraPosition.y, v3CameraPosition.z);
         shapesPrintf (5, 3, "Camera Up: (%f, %f, %f)", v3CameraUp.x, v3CameraUp.y, v3CameraUp.z);
     }
-
+    
+    displayRaytrace();
+    
+    
+    
     glutSwapBuffers();
 }
 
+static void raytrace()
+{
+    if (s_pRaytraceImage)
+    {
+        GLint pViewport[4];
+        glGetIntegerv(GL_VIEWPORT, pViewport);
+
+        glm::vec4* pPixel = s_pRaytraceImage;
+        for (GLint x=0; x<pViewport[2]; x++)
+        {
+            for (GLint y=0; y<pViewport[3]; y++)
+            {
+                *pPixel = glm::vec4(glm::linearRand(glm::vec3(0.0f), glm::vec3(1.0f)), 0.5f);
+                pPixel++;
+            }
+        }
+    }
+}
 
 static void
 key(unsigned char key, int x, int y)
@@ -263,6 +313,10 @@ key(unsigned char key, int x, int y)
         glutPostRedisplay();
         break;
             
+    case 13: //return
+        raytrace();
+        glutPostRedisplay();
+        break;
 
     default:
         break;
@@ -318,12 +372,11 @@ static void special (int key, int x, int y)
         v3CameraPosition = (glm::rotate(glm::mat4(1.0f), -10.0f, v3CameraUp) * glm::vec4(v3CameraPosition, 1.0f)).xyz();
         glutPostRedisplay();
         break;
-
+            
     default:
         break;
     }
 }
-
 
 static void idle(void)
 {
@@ -431,9 +484,8 @@ int main(int argc, char *argv[])
     
     load_obj("data/bunny.obj", s_aPoints, aNormals, s_aTriangles, s_aQuads);
     
-    BBox aBBox = BBox(s_aPoints);
-    
-    s_pTree = new Octree(aBBox,10);
+   
+    s_pTree = new Octree(s_aPoints,10);
 
 
     glutInitWindowSize(1024,768);
@@ -473,6 +525,7 @@ int main(int argc, char *argv[])
     glutMainLoop();
 
     delete s_pTree;
+    delete[] s_pRaytraceImage;
 
 #ifdef _MSC_VER
     /* DUMP MEMORY LEAK INFORMATION */

@@ -38,7 +38,11 @@ struct LengthComparator
     }
 };
 
-Octree::Octree (const BBox& rBBox, size_t nMaxPointsPerCell) : m_aBBox(rBBox), m_nMaxPointsPerCell(nMaxPointsPerCell), m_nDepth(0)
+Octree::Octree(const std::vector<glm::vec3>& rPoints, size_t nMaxPointsPerCell)
+:   m_aPoints(rPoints),
+    m_aBBox(BBox(rPoints)),
+    m_nMaxPointsPerCell(nMaxPointsPerCell),
+    m_nDepth(0)
 {
     
 }

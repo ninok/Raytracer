@@ -9,16 +9,15 @@ class Octree
 public:
     
 
-    Octree (const BBox& rBBox, size_t nMaxPointsPerCell);
+    Octree (const std::vector<glm::vec3>& rPoints, size_t nMaxPointsPerCell);
     ~Octree();
 
 
     size_t getDepth() const {return m_nDepth;}
 
     
-    void insertTriangle(const glm::vec3& v1, const glm::vec3& v2, const glm::vec3& v3);
-    
-//    void insertQuad(const glm::vec3& v1, const glm::vec3& v2, const glm::vec3& v3, const glm::vec3& v4);
+    void insertTriangle(const glm::lowp_ivec3& rIndices);
+//    void insertQuad(const glm::lowp_ivec4& rIndices);
 
     
 private:
@@ -54,7 +53,8 @@ private:
     const size_t            m_nMaxPointsPerCell;
     size_t                  m_nDepth;
 
-    const BBox              m_aBBox;
+    const BBox                      m_aBBox;
+    const std::vector<glm::vec3>    m_aPoints;
     
     friend class OctreeDebugger;
 };
